@@ -22,6 +22,10 @@ import {
 } from "./cache.js";
 import { DEFAULT_SYSTEM_PROMPT } from "./types.js";
 import { resolveProjectRoot } from "./project.js";
+import { createRequire } from "module";
+
+const require = createRequire(import.meta.url);
+const { version } = require("../package.json");
 
 const program = new Command();
 
@@ -30,7 +34,7 @@ program
   .description(
     "Claude Code Permission Hook - Intelligent auto-approval for Claude Code"
   )
-  .version("0.1.0");
+  .version(version);
 
 // Main permission handler command
 program
