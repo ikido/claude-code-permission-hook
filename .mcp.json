@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "zod": {
+      "type": "http",
+      "url": "https://mcp.inkeep.com/zod/mcp"
+    }
+  }
+}
