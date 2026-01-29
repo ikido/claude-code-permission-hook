@@ -105,92 +105,108 @@ program
     console.log("and blocks destructive commands.");
     console.log();
 
-    // Provider selection
-    const provider = await select<"openrouter" | "openai" | "anthropic">({
-      message: "Choose your LLM provider:",
-      choices: [
-        {
-          name: "OpenRouter (recommended - lowest latency)",
-          value: "openrouter",
+    // Check if config already exists
+    const existingConfig = (() => {
+      try {
+        return loadConfig();
+      } catch {
+        return null;
+      }
+    })();
+
+    const hasExistingConfig = existingConfig && existingConfig.llm.apiKey;
+
+    if (hasExistingConfig) {
+      console.log(chalk.green("✓ Existing configuration found at " + getConfigPath()));
+      console.log(chalk.gray("  Provider: " + existingConfig.llm.provider + ", Model: " + existingConfig.llm.model));
+      console.log(chalk.gray("  Run 'cc-approve config' to change provider or API key."));
+      console.log();
+    } else {
+      // Provider selection
+      const provider = await select<"openrouter" | "openai" | "anthropic">({
+        message: "Choose your LLM provider:",
+        choices: [
+          {
+            name: "OpenRouter (recommended - lowest latency)",
+            value: "openrouter",
+          },
+          { name: "OpenAI", value: "openai" },
+          { name: "Anthropic", value: "anthropic" },
+        ],
+      });
+
+      // API key input
+      const apiKey = await password({
+        message: "Enter your API key:",
+        mask: "X",
+        validate: (input: string) => {
+          if (!input || input.trim() === "") {
+            return "API key is required";
+          }
+          return true;
         },
-        { name: "OpenAI", value: "openai" },
-        { name: "Anthropic", value: "anthropic" },
-      ],
-    });
-
-    // API key input
-    const apiKey = await password({
-      message: "Enter your API key:",
-      mask: "X",
-      validate: (input: string) => {
-        if (!input || input.trim() === "") {
-          return "API key is required";
-        }
-        return true;
-      },
-    });
-
-    // Set provider-specific defaults
-    let baseUrl: string | undefined;
-    let model = "gpt-4o-mini";
-
-    if (provider === "openrouter") {
-      baseUrl = "https://openrouter.ai/api/v1";
-    } else if (provider === "anthropic") {
-      baseUrl = "https://api.anthropic.com/v1";
-      model = "claude-3-5-sonnet-20241022";
-    }
-
-    // OpenAI uses default baseUrl (undefined)
-
-    // Test API key
-    console.log(chalk.gray("\nValidating API key..."));
-    try {
-      const OpenAI = (await import("openai")).default;
-      const testClient = new OpenAI({
-        apiKey: apiKey.trim(),
-        baseURL: baseUrl,
       });
 
-      await testClient.chat.completions.create({
-        model,
-        messages: [{ role: "user", content: "test" }],
-        max_tokens: 1,
-      });
+      // Set provider-specific defaults
+      let baseUrl: string | undefined;
+      let model = "gpt-4o-mini";
 
-      console.log(chalk.green("✓ API key validated"));
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Unknown error";
-      console.log(chalk.red("✗ API key validation failed: " + message));
-      console.log(
-        chalk.yellow("Please check your API key and try again.")
-      );
-      return;
+      if (provider === "openrouter") {
+        baseUrl = "https://openrouter.ai/api/v1";
+      } else if (provider === "anthropic") {
+        baseUrl = "https://api.anthropic.com/v1";
+        model = "claude-3-5-sonnet-20241022";
+      }
+
+      // Test API key
+      console.log(chalk.gray("\nValidating API key..."));
+      try {
+        const OpenAI = (await import("openai")).default;
+        const testClient = new OpenAI({
+          apiKey: apiKey.trim(),
+          baseURL: baseUrl,
+        });
+
+        await testClient.chat.completions.create({
+          model,
+          messages: [{ role: "user", content: "test" }],
+          max_tokens: 1,
+        });
+
+        console.log(chalk.green("✓ API key validated"));
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Unknown error";
+        console.log(chalk.red("✗ API key validation failed: " + message));
+        console.log(
+          chalk.yellow("Please check your API key and try again.")
+        );
+        return;
+      }
+
+      // Save config
+      const newConfig = {
+        llm: {
+          provider,
+          apiKey: apiKey.trim(),
+          model,
+          baseUrl,
+          systemPrompt: DEFAULT_SYSTEM_PROMPT,
+        },
+        cache: {
+          enabled: true,
+          ttlHours: 168,
+        },
+        logging: {
+          enabled: true,
+          level: "info" as const,
+        },
+        customAllowPatterns: [] as string[],
+        customDenyPatterns: [] as string[],
+        customPassthroughPatterns: [] as string[],
+      };
+      saveConfig(newConfig);
     }
-
-    // Save config
-    const newConfig = {
-      llm: {
-        provider,
-        apiKey: apiKey.trim(),
-        model,
-        baseUrl,
-        systemPrompt: DEFAULT_SYSTEM_PROMPT,
-      },
-      cache: {
-        enabled: true,
-        ttlHours: 168,
-      },
-      logging: {
-        enabled: true,
-        level: "info" as const,
-      },
-      customAllowPatterns: [] as string[],
-      customDenyPatterns: [] as string[],
-      customPassthroughPatterns: [] as string[],
-    };
-    saveConfig(newConfig);
 
     // Choose installation scope
     const scope = await select({
@@ -278,9 +294,11 @@ program
 
     console.log();
     console.log(chalk.green("✓ Hook installed to " + settingsPath));
-    console.log(
-      chalk.green("✓ Configuration saved to " + getConfigPath())
-    );
+    if (!hasExistingConfig) {
+      console.log(
+        chalk.green("✓ Configuration saved to " + getConfigPath())
+      );
+    }
     console.log();
     console.log(chalk.gray("Run 'cc-approve doctor' to verify setup."));
   });
@@ -692,5 +710,29 @@ function summarizeInput(toolInput: Record<string, unknown>): string {
   }
   return "";
 }
+
+// Update command
+program
+  .command("update")
+  .description("Update to the latest version")
+  .action(async () => {
+    const { name } = require("../package.json");
+    console.log(chalk.gray(`Updating ${name}...`));
+    const { execSync } = await import("child_process");
+    try {
+      execSync(`npm install -g ${name}@latest`, { stdio: "inherit" });
+      console.log(chalk.green("✓ Updated successfully"));
+    } catch {
+      console.log(chalk.red("✗ Update failed. Try manually:"));
+      console.log(`  npm install -g ${name}@latest`);
+    }
+  });
+
+process.on("uncaughtException", (error) => {
+  if (error instanceof Error && error.name === "ExitPromptError") {
+    process.exit(0);
+  }
+  throw error;
+});
 
 program.parse();
