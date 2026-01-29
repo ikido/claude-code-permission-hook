@@ -5,5 +5,18 @@
   },
   "enableAllProjectMcpServers": true,
   "enabledPlugins": {},
-  "env": {}
+  "env": {},
+  "hooks": {
+    "PermissionRequest": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cc-approve permission"
+          }
+        ]
+      }
+    ]
+  }
 }
