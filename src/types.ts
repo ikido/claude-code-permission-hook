@@ -4,7 +4,7 @@ import { z } from "zod";
 export const PermissionRequestInputSchema = z.object({
   hook_event_name: z.literal("PermissionRequest"),
   tool_name: z.string(),
-  tool_input: z.record(z.unknown()),
+  tool_input: z.record(z.string(), z.unknown()),
   transcript: z.array(z.unknown()).optional(),
   session_id: z.string().optional(),
   cwd: z.string().optional(),
@@ -17,7 +17,7 @@ export type PermissionRequestInput = z.infer<
 // PermissionRequest Output Schema
 export const PermissionDecisionSchema = z.object({
   behavior: z.enum(["allow", "deny"]),
-  updatedInput: z.record(z.unknown()).optional(),
+  updatedInput: z.record(z.string(), z.unknown()).optional(),
   message: z.string().optional(),
 });
 
@@ -87,19 +87,19 @@ export const ConfigSchema = z.object({
       baseUrl: z.string().optional(),
       systemPrompt: z.string().default(DEFAULT_SYSTEM_PROMPT),
     })
-    .default({}),
+    .prefault({}),
   cache: z
     .object({
       enabled: z.boolean().default(true),
       ttlHours: z.number().default(168), // 1 week
     })
-    .default({}),
+    .prefault({}),
   logging: z
     .object({
       enabled: z.boolean().default(true),
       level: z.enum(["debug", "info", "warn", "error"]).default("info"),
     })
-    .default({}),
+    .prefault({}),
   customAllowPatterns: z.array(z.string()).default([]),
   customDenyPatterns: z.array(z.string()).default([]),
   customPassthroughPatterns: z.array(z.string()).default([]),
@@ -114,14 +114,14 @@ export const CacheEntrySchema = z.object({
   reason: z.string(),
   timestamp: z.number(),
   toolName: z.string(),
-  toolInput: z.record(z.unknown()).optional(),
+  toolInput: z.record(z.string(), z.unknown()).optional(),
   projectRoot: z.string().optional(),
 });
 
 export type CacheEntry = z.infer<typeof CacheEntrySchema>;
 
 // Cache File Schema
-export const CacheFileSchema = z.record(CacheEntrySchema);
+export const CacheFileSchema = z.record(z.string(), CacheEntrySchema);
 
 export type CacheFile = z.infer<typeof CacheFileSchema>;
 
