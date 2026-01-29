@@ -1,0 +1,58 @@
+{
+  "name": "@malcomsonbrothers/claude-code-permission-hook",
+  "version": "0.1.0",
+  "description": "Intelligent auto-approval hook for Claude Code using PermissionRequest",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "cc-approve": "./bin/cc-approve.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest",
+    "lint": "eslint src/",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "claude",
+    "claude-code",
+    "hooks",
+    "auto-approve",
+    "permission",
+    "ai",
+    "automation"
+  ],
+  "author": "Malcomson Brothers",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/malcomsonbrothers/claude-code-permission-hook"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "dist",
+    "bin"
+  ],
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "commander": "^12.1.0",
+    "inquirer": "^9.2.23",
+    "openai": "^4.52.0",
+    "pino": "^9.0.0",
+    "pino-pretty": "^11.0.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/inquirer": "^9.0.7",
+    "@types/node": "^20.14.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "eslint": "^8.57.0",
+    "typescript": "^5.4.5",
+    "vitest": "^1.6.0"
+  }
+}
