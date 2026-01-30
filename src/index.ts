@@ -17,6 +17,7 @@ import {
   clearCacheByDecision,
   clearCacheByKey,
   clearCacheByGrep,
+  clearCacheLastN,
   listCacheEntries,
   getCacheStats,
 } from "./cache.js";
@@ -447,13 +448,30 @@ program
     "--grep <substring>",
     "Clear entries matching a substring in toolName, reason, or input"
   )
+  .option("--last <n>", "Clear the N most recent entries")
+  .option("--all", "With --last, clear from all projects instead of current")
   .action(
     (options: {
       denyOnly?: boolean;
       allowOnly?: boolean;
       key?: string;
       grep?: string;
+      last?: string;
+      all?: boolean;
     }) => {
+      if (options.last) {
+        const n = parseInt(options.last, 10);
+        if (isNaN(n) || n < 1) {
+          console.log(chalk.red("--last requires a positive number"));
+          return;
+        }
+        const projectRoot = options.all ? undefined : resolveProjectRoot(process.cwd());
+        const scope = options.all ? "across all projects" : "for current project";
+        const count = clearCacheLastN(n, projectRoot);
+        console.log(chalk.green(`✓ Cleared ${count} most recent cached decisions ${scope}`));
+        return;
+      }
+
       if (options.key) {
         const found = clearCacheByKey(options.key);
         if (found) {

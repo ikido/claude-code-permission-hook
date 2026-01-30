@@ -179,6 +179,29 @@ export function listCacheEntries(projectRoot?: string): CacheEntry[] {
   return entries;
 }
 
+export function clearCacheLastN(n: number, projectRoot?: string): number {
+  const cache = loadCache();
+  let entries = Object.entries(cache).map(([hash, entry]) => ({ hash, ...entry }));
+
+  if (projectRoot) {
+    entries = entries.filter((e) => e.projectRoot === projectRoot);
+  }
+
+  // Sort by timestamp descending (most recent first)
+  entries.sort((a, b) => b.timestamp - a.timestamp);
+
+  const toRemove = entries.slice(0, n);
+  for (const entry of toRemove) {
+    delete cache[entry.hash];
+  }
+
+  if (toRemove.length > 0) {
+    saveCache(cache);
+  }
+
+  return toRemove.length;
+}
+
 export function getCacheStats(): {
   entries: number;
   oldestTimestamp?: number;
