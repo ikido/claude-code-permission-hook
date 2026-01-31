@@ -30,6 +30,16 @@ const INSTANT_PASSTHROUGH_TOOLS = new Set([
   "AskUserQuestion", // User MUST see questions and provide their answer
 ]);
 
+// Patterns that should fast-allow for common dev workflows
+const FAST_ALLOW_BASH_PATTERNS = [
+  // Sourcing .env files + database CLI with read-only SQL (SELECT, EXPLAIN, DESCRIBE, SHOW)
+  // e.g. source .env && psql "$DATABASE_URL" -c "SELECT ..."
+  /source\s+\S*\.env\b.*\b(psql|mysql|sqlite3|mongosh)\b.*\b(SELECT|EXPLAIN|DESCRIBE|SHOW)\b/i,
+  /\.\s+\S*\.env\b.*\b(psql|mysql|sqlite3|mongosh)\b.*\b(SELECT|EXPLAIN|DESCRIBE|SHOW)\b/i,
+  // Direct database CLI with read-only SQL (no .env sourcing needed)
+  /\b(psql|mysql|sqlite3|mongosh)\b.*-[ce]\s+["']?\s*(SELECT|EXPLAIN|DESCRIBE|SHOW)\b/i,
+];
+
 // Patterns that should ALWAYS be denied - system destruction
 const INSTANT_DENY_BASH_PATTERNS = [
   // Unix/Linux system root destruction
@@ -96,6 +106,16 @@ export function checkFastDecision(
           return {
             decision: "deny",
             reason: `Blocked destructive command pattern: ${pattern.source}`,
+          };
+        }
+      }
+
+      // Check fast-allow patterns for common dev workflows
+      for (const pattern of FAST_ALLOW_BASH_PATTERNS) {
+        if (pattern.test(command)) {
+          return {
+            decision: "allow",
+            reason: `Allowed common dev workflow: ${pattern.source}`,
           };
         }
       }
