@@ -23,11 +23,26 @@ const INSTANT_ALLOW_TOOLS = new Set([
   "NotebookEdit",
   "TodoWrite",
   "Task",
+  // Claude Code internal tools (no dangerous side effects)
+  "EnterPlanMode",
+  "TaskCreate",
+  "TaskUpdate",
+  "TaskList",
+  "TaskGet",
+  "TaskStop",
+  "TaskOutput",
+  "KillShell",
+  "Skill",
+  "MCPSearch",
+  "LSP",
+  "ListMcpResourcesTool",
+  "ReadMcpResourceTool",
 ]);
 
 // Tools that should ALWAYS passthrough to native dialog (user must see and respond)
 const INSTANT_PASSTHROUGH_TOOLS = new Set([
   "AskUserQuestion", // User MUST see questions and provide their answer
+  "ExitPlanMode", // User MUST review and approve the plan
 ]);
 
 // Patterns that should ALWAYS be denied - system destruction
