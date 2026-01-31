@@ -830,20 +830,14 @@ program
       console.log(`  npm install -g ${name}@latest`);
     }
 
-    // Auto-update system prompt if enabled
+    // Auto-update system prompt using the newly installed binary
+    // (this process still has old constants in memory, so delegate to the new one)
     const config = loadConfig();
-    if (
-      config.autoUpdateSystemPrompt &&
-      config.llm.systemPromptVersion < CURRENT_SYSTEM_PROMPT_VERSION
-    ) {
-      const oldVersion = config.llm.systemPromptVersion;
-      config.llm.systemPrompt = DEFAULT_SYSTEM_PROMPT;
-      config.llm.systemPromptVersion = CURRENT_SYSTEM_PROMPT_VERSION;
-      saveConfig(config);
-      const count = clearCache();
-      console.log(chalk.green(`✓ System prompt updated: v${oldVersion} → v${CURRENT_SYSTEM_PROMPT_VERSION}`));
-      if (count > 0) {
-        console.log(chalk.green(`✓ Cleared ${count} cached decisions (stale from old prompt)`));
+    if (config.autoUpdateSystemPrompt) {
+      try {
+        execSync("cc-approve update-prompt", { stdio: "inherit" });
+      } catch {
+        // update-prompt will print its own messages; ignore exit errors
       }
     }
   });
