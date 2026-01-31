@@ -24,7 +24,10 @@ import {
   listCacheEntries,
   getCacheStats,
 } from "./cache.js";
-import { DEFAULT_SYSTEM_PROMPT } from "./types.js";
+import {
+  DEFAULT_SYSTEM_PROMPT,
+  CURRENT_SYSTEM_PROMPT_VERSION,
+} from "./types.js";
 import { resolveProjectRoot } from "./project.js";
 import { createRequire } from "module";
 
@@ -234,6 +237,7 @@ program
           model,
           baseUrl,
           systemPrompt: DEFAULT_SYSTEM_PROMPT,
+          systemPromptVersion: CURRENT_SYSTEM_PROMPT_VERSION,
         },
         cache: {
           enabled: true,
@@ -243,6 +247,7 @@ program
           enabled: true,
           level: "info" as const,
         },
+        autoUpdateSystemPrompt: true,
         customAllowPatterns: [] as string[],
         customDenyPatterns: [] as string[],
         customPassthroughPatterns: [] as string[],
@@ -459,6 +464,7 @@ program
         model,
         baseUrl,
         systemPrompt: config.llm?.systemPrompt || DEFAULT_SYSTEM_PROMPT,
+        systemPromptVersion: config.llm?.systemPromptVersion || CURRENT_SYSTEM_PROMPT_VERSION,
       },
       cache: {
         enabled: true,
@@ -468,6 +474,7 @@ program
         enabled: true,
         level: "info" as const,
       },
+      autoUpdateSystemPrompt: config.autoUpdateSystemPrompt ?? true,
       customAllowPatterns: config.customAllowPatterns || [],
       customDenyPatterns: config.customDenyPatterns || [],
       customPassthroughPatterns: config.customPassthroughPatterns || [],
@@ -770,6 +777,30 @@ function summarizeInput(toolInput: Record<string, unknown>): string {
   return "";
 }
 
+// Update-prompt command
+program
+  .command("update-prompt")
+  .description("Update the system prompt to the latest built-in version and clear cache")
+  .action(() => {
+    const config = loadConfig();
+    const oldVersion = config.llm.systemPromptVersion;
+
+    if (oldVersion >= CURRENT_SYSTEM_PROMPT_VERSION) {
+      console.log(chalk.green(`✓ System prompt is already at version ${oldVersion} (latest)`));
+      return;
+    }
+
+    config.llm.systemPrompt = DEFAULT_SYSTEM_PROMPT;
+    config.llm.systemPromptVersion = CURRENT_SYSTEM_PROMPT_VERSION;
+    saveConfig(config);
+
+    const count = clearCache();
+    console.log(chalk.green(`✓ System prompt updated: v${oldVersion} → v${CURRENT_SYSTEM_PROMPT_VERSION}`));
+    if (count > 0) {
+      console.log(chalk.green(`✓ Cleared ${count} cached decisions (stale from old prompt)`));
+    }
+  });
+
 // Update command
 program
   .command("update")
@@ -784,6 +815,23 @@ program
     } catch {
       console.log(chalk.red("✗ Update failed. Try manually:"));
       console.log(`  npm install -g ${name}@latest`);
+    }
+
+    // Auto-update system prompt if enabled
+    const config = loadConfig();
+    if (
+      config.autoUpdateSystemPrompt &&
+      config.llm.systemPromptVersion < CURRENT_SYSTEM_PROMPT_VERSION
+    ) {
+      const oldVersion = config.llm.systemPromptVersion;
+      config.llm.systemPrompt = DEFAULT_SYSTEM_PROMPT;
+      config.llm.systemPromptVersion = CURRENT_SYSTEM_PROMPT_VERSION;
+      saveConfig(config);
+      const count = clearCache();
+      console.log(chalk.green(`✓ System prompt updated: v${oldVersion} → v${CURRENT_SYSTEM_PROMPT_VERSION}`));
+      if (count > 0) {
+        console.log(chalk.green(`✓ Cleared ${count} cached decisions (stale from old prompt)`));
+      }
     }
   });
 

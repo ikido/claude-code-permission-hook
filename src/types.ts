@@ -33,6 +33,9 @@ export type PermissionRequestOutput = z.infer<
 >;
 export type PermissionDecision = z.infer<typeof PermissionDecisionSchema>;
 
+// Bump this when DEFAULT_SYSTEM_PROMPT changes so existing users get the update.
+export const CURRENT_SYSTEM_PROMPT_VERSION = 2;
+
 // Default LLM System Prompt - can be customized in config
 export const DEFAULT_SYSTEM_PROMPT = `You are a security-focused AI assistant that evaluates Claude Code tool requests for auto-approval.
 
@@ -89,6 +92,7 @@ export const ConfigSchema = z.object({
       model: z.string().default("gpt-4o-mini"),
       baseUrl: z.string().optional(),
       systemPrompt: z.string().default(DEFAULT_SYSTEM_PROMPT),
+      systemPromptVersion: z.number().default(0),
     })
     .prefault({}),
   cache: z
@@ -103,6 +107,7 @@ export const ConfigSchema = z.object({
       level: z.enum(["debug", "info", "warn", "error"]).default("info"),
     })
     .prefault({}),
+  autoUpdateSystemPrompt: z.boolean().default(true),
   customAllowPatterns: z.array(z.string()).default([]),
   customDenyPatterns: z.array(z.string()).default([]),
   customPassthroughPatterns: z.array(z.string()).default([]),

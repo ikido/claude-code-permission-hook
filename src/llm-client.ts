@@ -1,6 +1,11 @@
 import OpenAI from "openai";
 import { loadConfig, getApiKey } from "./config.js";
-import { LLMResponse, LLMResponseSchema } from "./types.js";
+import {
+  LLMResponse,
+  LLMResponseSchema,
+  DEFAULT_SYSTEM_PROMPT,
+  CURRENT_SYSTEM_PROMPT_VERSION,
+} from "./types.js";
 
 export async function queryLLM(
   toolName: string,
@@ -23,8 +28,15 @@ export async function queryLLM(
     baseURL: config.llm.baseUrl,
   });
 
-  // Use configurable system prompt from config
-  const systemPrompt = config.llm.systemPrompt;
+  // Use the saved prompt if it's up-to-date (or user opted out of auto-updates).
+  // Otherwise use the latest built-in prompt so users get improvements automatically.
+  let systemPrompt = config.llm.systemPrompt;
+  if (
+    config.llm.systemPromptVersion < CURRENT_SYSTEM_PROMPT_VERSION &&
+    config.autoUpdateSystemPrompt
+  ) {
+    systemPrompt = DEFAULT_SYSTEM_PROMPT;
+  }
 
   const userPrompt = `Evaluate this tool request for auto-approval:
 
