@@ -514,9 +514,11 @@ program
           return;
         }
         const projectRoot = options.all ? undefined : resolveProjectRoot(process.cwd());
+        const decision = options.denyOnly ? "deny" as const : options.allowOnly ? "allow" as const : undefined;
         const scope = options.all ? "across all projects" : "for current project";
-        const count = clearCacheLastN(n, projectRoot);
-        console.log(chalk.green(`✓ Cleared ${count} most recent cached decisions ${scope}`));
+        const label = decision ? ` ${decision}` : "";
+        const count = clearCacheLastN(n, projectRoot, decision);
+        console.log(chalk.green(`✓ Cleared ${count} most recent${label} cached decisions ${scope}`));
         return;
       }
 
@@ -573,23 +575,34 @@ program
   .option("--page <number>", "Page number", "1")
   .option("--per-page <number>", "Entries per page", "20")
   .option("--all", "Show all projects, not just the current one")
+  .option("--deny", "Show only denied decisions")
+  .option("--allow", "Show only allowed decisions")
   .action(
-    (options: { page: string; perPage: string; all?: boolean }) => {
+    (options: { page: string; perPage: string; all?: boolean; deny?: boolean; allow?: boolean }) => {
       const page = Math.max(1, parseInt(options.page, 10) || 1);
       const perPage = Math.max(1, parseInt(options.perPage, 10) || 20);
 
       const projectRoot = options.all
         ? undefined
         : resolveProjectRoot(process.cwd());
-      const entries = listCacheEntries(projectRoot);
+      let entries = listCacheEntries(projectRoot);
+
+      // Filter by decision type
+      const filterLabel = options.deny ? "denied" : options.allow ? "allowed" : null;
+      if (options.deny) {
+        entries = entries.filter((e) => e.decision === "deny");
+      } else if (options.allow) {
+        entries = entries.filter((e) => e.decision === "allow");
+      }
 
       if (entries.length === 0) {
+        const suffix = filterLabel ? ` (${filterLabel})` : "";
         if (options.all) {
-          console.log(chalk.yellow("No cached decisions found."));
+          console.log(chalk.yellow(`No cached decisions found${suffix}.`));
         } else {
           console.log(
             chalk.yellow(
-              `No cached decisions for project: ${projectRoot}`
+              `No cached decisions${suffix} for project: ${projectRoot}`
             )
           );
           console.log(

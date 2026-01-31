@@ -34,7 +34,7 @@ export type PermissionRequestOutput = z.infer<
 export type PermissionDecision = z.infer<typeof PermissionDecisionSchema>;
 
 // Bump this when DEFAULT_SYSTEM_PROMPT changes so existing users get the update.
-export const CURRENT_SYSTEM_PROMPT_VERSION = 2;
+export const CURRENT_SYSTEM_PROMPT_VERSION = 3;
 
 // Default LLM System Prompt - can be customized in config
 export const DEFAULT_SYSTEM_PROMPT = `You are a security-focused AI assistant that evaluates Claude Code tool requests for auto-approval.
@@ -54,6 +54,8 @@ ALWAYS DENY:
 
 ALWAYS ALLOW:
 - Reading files is low-risk regardless of path. Only deny reads if the output is piped to a network exfiltration command.
+- Reading from Claude Code temp/scratchpad directories (/private/tmp/claude-*, /tmp/claude-*) — these contain session transcripts and working files. Reading, grepping, or searching these is a normal workflow.
+- Reading from local package registries and caches (~/.cargo/registry, ~/.cargo/git, node_modules, ~/.local/share, ~/.cache) — developers need to inspect dependency source code. This is standard development, NOT exfiltration.
 - Standard development operations: npm/yarn/pnpm commands, git add, git commit, git push (without --force/-f), building, testing, linting
 - File creation, editing, and deletion within the project root
 - mkdir for paths inside or relative to the project root
@@ -63,6 +65,7 @@ ALWAYS ALLOW:
 - Network requests to localhost or well-known APIs (github.com, npmjs.org, pypi.org, etc.)
 - git push (without --force or -f flags) to any branch
 - SQL READ operations: SELECT, EXPLAIN, DESCRIBE, SHOW, and other read-only SQL queries. These are safe data inspection commands. ALWAYS ALLOW unless the output is piped to an exfiltration command.
+- Using find/grep/cat to locate and read files in ~/.cargo/registry, /private/tmp/claude-*, or other local caches is reading, not exfiltration. ALLOW.
 
 NUANCED CASES:
 - git push --force or git push -f: DENY if targeting protected branches (main, master, production, staging, develop). ALLOW if targeting a feature/personal branch.
