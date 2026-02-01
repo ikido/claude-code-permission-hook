@@ -47,7 +47,8 @@ program
 program
   .command("permission")
   .description("Handle a PermissionRequest hook (reads from stdin)")
-  .action(async () => {
+  .option("--soft-deny", "Convert denials to passthrough (show native dialog instead of blocking)")
+  .action(async (options: { softDeny?: boolean }) => {
     try {
       // Read input from stdin
       const chunks: Buffer[] = [];
@@ -63,6 +64,14 @@ program
       // Handle passthrough: null means exit 0 with no output
       // This triggers Claude Code's native permission dialog
       if (result === null) {
+        process.exit(0);
+      }
+
+      // Soft-deny mode: convert denials to passthrough so user decides
+      if (
+        options.softDeny &&
+        result.hookSpecificOutput.decision.behavior === "deny"
+      ) {
         process.exit(0);
       }
 
