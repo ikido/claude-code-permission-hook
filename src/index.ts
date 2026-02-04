@@ -101,7 +101,8 @@ program
   .description(
     "Handle a PreToolUse hook (reads from stdin). Use this for background agents where PermissionRequest hooks don't fire."
   )
-  .action(async () => {
+  .option("--soft-deny", "Convert denials to passthrough (show native dialog instead of blocking)")
+  .action(async (options: { softDeny?: boolean }) => {
     try {
       const chunks: Buffer[] = [];
       for await (const chunk of process.stdin) {
@@ -114,6 +115,14 @@ program
 
       // null means passthrough: exit 0 with no output
       if (result === null) {
+        process.exit(0);
+      }
+
+      // Soft-deny mode: convert denials to passthrough so user decides
+      if (
+        options.softDeny &&
+        result.hookSpecificOutput.permissionDecision === "deny"
+      ) {
         process.exit(0);
       }
 

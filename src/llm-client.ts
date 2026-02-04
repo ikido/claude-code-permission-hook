@@ -11,6 +11,7 @@ export async function queryLLM(
   toolName: string,
   toolInput: Record<string, unknown>,
   projectRoot?: string,
+  trustedPaths?: string[],
 ): Promise<LLMResponse> {
   const config = loadConfig();
   const apiKey = getApiKey();
@@ -38,10 +39,15 @@ export async function queryLLM(
     systemPrompt = DEFAULT_SYSTEM_PROMPT;
   }
 
+  const trustedPathsSection =
+    trustedPaths && trustedPaths.length > 0
+      ? `\nTrusted Paths (treat as equivalent to project root): ${trustedPaths.join(", ")}`
+      : "";
+
   const userPrompt = `Evaluate this tool request for auto-approval:
 
 Tool: ${toolName}
-Project Root: ${projectRoot || "unknown"}
+Project Root: ${projectRoot || "unknown"}${trustedPathsSection}
 Input: ${JSON.stringify(toolInput, null, 2)}
 
 Should this be automatically approved or denied?`;

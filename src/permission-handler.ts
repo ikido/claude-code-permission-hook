@@ -9,7 +9,7 @@ import { getCachedDecision, setCachedDecision, clearCache } from "./cache.js";
 import { loadConfig, saveConfig } from "./config.js";
 import { queryLLM } from "./llm-client.js";
 import { logDecision } from "./logger.js";
-import { resolveProjectRoot } from "./project.js";
+import { resolveProjectRoot, getTrustedPaths } from "./project.js";
 
 let promptUpgradeChecked = false;
 
@@ -52,6 +52,7 @@ export async function resolveDecision(
   ensurePromptUpToDate();
 
   const projectRoot = cwd ? resolveProjectRoot(cwd) : undefined;
+  const trustedPaths = projectRoot ? getTrustedPaths(projectRoot) : [];
 
   // Tier 1: Check fast decisions (hardcoded patterns)
   const fastResult = checkFastDecision(toolName, toolInput);
@@ -113,7 +114,7 @@ export async function resolveDecision(
   }
 
   // Tier 3: Query LLM
-  const llmResult = await queryLLM(toolName, toolInput, projectRoot);
+  const llmResult = await queryLLM(toolName, toolInput, projectRoot, trustedPaths);
 
   setCachedDecision(
     toolName,

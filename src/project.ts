@@ -1,5 +1,38 @@
-import { existsSync } from "fs";
+import { existsSync, readFileSync } from "fs";
 import { dirname, join } from "path";
+
+/**
+ * Read trusted paths from .claude/settings.json and .claude/settings.local.json.
+ * Looks for ccApprove.trustedPaths array in both files, merges them.
+ */
+export function getTrustedPaths(projectRoot: string): string[] {
+  const trustedPaths: string[] = [];
+  const settingsFiles = [
+    join(projectRoot, ".claude", "settings.json"),
+    join(projectRoot, ".claude", "settings.local.json"),
+  ];
+
+  for (const settingsPath of settingsFiles) {
+    if (existsSync(settingsPath)) {
+      try {
+        const content = readFileSync(settingsPath, "utf-8");
+        const settings = JSON.parse(content);
+        const paths = settings?.ccApprove?.trustedPaths;
+        if (Array.isArray(paths)) {
+          for (const p of paths) {
+            if (typeof p === "string" && !trustedPaths.includes(p)) {
+              trustedPaths.push(p);
+            }
+          }
+        }
+      } catch {
+        // Ignore parse errors
+      }
+    }
+  }
+
+  return trustedPaths;
+}
 
 /**
  * Resolve the project root by walking up from the given cwd.
