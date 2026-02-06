@@ -117,10 +117,10 @@ export function checkFastDecision(
     }
   }
 
-  // Check custom allow patterns
+  // Check custom allow patterns (checks both tool name and tool input, like deny patterns)
   for (const pattern of config.customAllowPatterns) {
     const regex = new RegExp(pattern);
-    if (regex.test(toolName)) {
+    if (regex.test(toolName) || regex.test(JSON.stringify(toolInput))) {
       return {
         decision: "allow",
         reason: `Allowed by custom pattern: ${pattern}`,
