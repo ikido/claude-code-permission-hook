@@ -1,3 +1,5 @@
+import { resolve } from "path";
+import { homedir } from "os";
 import { loadConfig } from "./config.js";
 
 export interface FastDecisionResult {
@@ -145,6 +147,21 @@ export function checkFastDecision(
       decision: "passthrough",
       reason: `Tool '${toolName}' requires user interaction - showing native dialog`,
     };
+  }
+
+  // Protect config directory from agent modification
+  if (
+    (toolName === "Write" || toolName === "Edit" || toolName === "MultiEdit") &&
+    typeof toolInput.file_path === "string"
+  ) {
+    const configDir = resolve(homedir(), ".cc-approve");
+    const targetPath = resolve(toolInput.file_path as string);
+    if (targetPath.startsWith(configDir + "/") || targetPath === configDir) {
+      return {
+        decision: "passthrough",
+        reason: `Modification to config directory requires user approval: ${targetPath}`,
+      };
+    }
   }
 
   // Check instant allow tools

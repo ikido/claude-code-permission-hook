@@ -35,6 +35,23 @@ export function getTrustedPaths(projectRoot: string): string[] {
 }
 
 /**
+ * Read project-specific LLM instructions from .cc-approve.md in the project root.
+ * Returns the file content if it exists, or null otherwise.
+ */
+export function getProjectInstructions(projectRoot: string): string | null {
+  const instructionsPath = join(projectRoot, ".cc-approve.md");
+  if (existsSync(instructionsPath)) {
+    try {
+      const content = readFileSync(instructionsPath, "utf-8").trim();
+      return content || null;
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+/**
  * Resolve the project root by walking up from the given cwd.
  * Looks for .git directory first, then .claude directory, falls back to cwd.
  */

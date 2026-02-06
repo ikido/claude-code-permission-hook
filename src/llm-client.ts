@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { loadConfig, getApiKey } from "./config.js";
+import { getProjectInstructions } from "./project.js";
 import {
   LLMResponse,
   LLMResponseSchema,
@@ -39,6 +40,14 @@ export async function queryLLM(
     systemPrompt = DEFAULT_SYSTEM_PROMPT;
   }
 
+  // Append project-specific instructions if available
+  if (projectRoot) {
+    const projectInstructions = getProjectInstructions(projectRoot);
+    if (projectInstructions) {
+      systemPrompt += `\n\n## PROJECT-SPECIFIC INSTRUCTIONS\n${projectInstructions}`;
+    }
+  }
+
   const trustedPathsSection =
     trustedPaths && trustedPaths.length > 0
       ? `\nTrusted Paths (treat as equivalent to project root): ${trustedPaths.join(", ")}`
@@ -66,7 +75,6 @@ Should this be automatically approved or denied?`;
       ],
       temperature: 0,
       max_tokens: 200,
-      response_format: { type: "json_object" },
     };
 
     if (
