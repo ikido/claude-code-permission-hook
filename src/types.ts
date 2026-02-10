@@ -34,7 +34,7 @@ export type PermissionRequestOutput = z.infer<
 export type PermissionDecision = z.infer<typeof PermissionDecisionSchema>;
 
 // Bump this when DEFAULT_SYSTEM_PROMPT changes so existing users get the update.
-export const CURRENT_SYSTEM_PROMPT_VERSION = 3;
+export const CURRENT_SYSTEM_PROMPT_VERSION = 4;
 
 // Default LLM System Prompt - can be customized in config
 export const DEFAULT_SYSTEM_PROMPT = `You are a security-focused AI assistant that evaluates Claude Code tool requests for auto-approval.
@@ -78,9 +78,15 @@ NUANCED CASES:
 
 DEFAULT TO ALLOW for standard development operations. Only DENY genuinely dangerous commands.
 
+WHEN TO USE "ask_user":
+- When you are uncertain whether the command is safe or dangerous
+- When the command could be legitimate but you lack enough context to decide
+- When the command operates on external services (APIs, databases, cloud) and intent is unclear
+- Prefer "ask_user" over "deny" unless the command is clearly destructive or malicious
+
 Respond with JSON only:
 {
-  "decision": "allow" | "deny",
+  "decision": "allow" | "deny" | "ask_user",
   "reason": "Brief explanation of your decision"
 }`;
 
@@ -149,9 +155,9 @@ export const LogEntrySchema = z.object({
 
 export type LogEntry = z.infer<typeof LogEntrySchema>;
 
-// LLM Response Schema (allow/deny only - passthrough is handled by fast-decisions)
+// LLM Response Schema (allow/deny/ask_user - passthrough is handled by fast-decisions)
 export const LLMResponseSchema = z.object({
-  decision: z.enum(["allow", "deny"]),
+  decision: z.enum(["allow", "deny", "ask_user"]),
   reason: z.string(),
 });
 

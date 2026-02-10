@@ -116,6 +116,20 @@ export async function resolveDecision(
   // Tier 3: Query LLM
   const llmResult = await queryLLM(toolName, toolInput, projectRoot, trustedPaths);
 
+  // LLM can return "ask_user" to escalate to the human via passthrough.
+  // Don't cache ask_user decisions — user should be asked each time.
+  if (llmResult.decision === "ask_user") {
+    logDecision({
+      toolName,
+      decision: "passthrough",
+      reason: `LLM uncertain: ${llmResult.reason}`,
+      decisionSource: "llm",
+      sessionId,
+      projectRoot,
+    });
+    return { decision: "passthrough", reason: `LLM uncertain: ${llmResult.reason}` };
+  }
+
   setCachedDecision(
     toolName,
     toolInput,
