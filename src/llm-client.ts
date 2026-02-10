@@ -6,6 +6,7 @@ import {
   LLMResponseSchema,
   DEFAULT_SYSTEM_PROMPT,
   CURRENT_SYSTEM_PROMPT_VERSION,
+  ASK_USER_PROMPT_ADDITION,
 } from "./types.js";
 
 export async function queryLLM(
@@ -38,6 +39,11 @@ export async function queryLLM(
     config.autoUpdateSystemPrompt
   ) {
     systemPrompt = DEFAULT_SYSTEM_PROMPT;
+  }
+
+  // Append ask_user capability when enabled
+  if (config.allowAskUser) {
+    systemPrompt += ASK_USER_PROMPT_ADDITION;
   }
 
   // Append project-specific instructions if available

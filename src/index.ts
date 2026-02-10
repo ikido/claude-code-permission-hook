@@ -269,6 +269,7 @@ program
         customAllowPatterns: [] as string[],
         customDenyPatterns: [] as string[],
         customPassthroughPatterns: [] as string[],
+        allowAskUser: false,
       };
       saveConfig(newConfig);
     }
@@ -496,6 +497,7 @@ program
       customAllowPatterns: config.customAllowPatterns || [],
       customDenyPatterns: config.customDenyPatterns || [],
       customPassthroughPatterns: config.customPassthroughPatterns || [],
+      allowAskUser: config.allowAskUser ?? false,
     };
     saveConfig(newConfig);
 

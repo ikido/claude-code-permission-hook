@@ -10,6 +10,7 @@ import { loadConfig, saveConfig } from "./config.js";
 import { queryLLM } from "./llm-client.js";
 import { logDecision } from "./logger.js";
 import { resolveProjectRoot, getTrustedPaths } from "./project.js";
+import type { Config } from "./types.js";
 
 let promptUpgradeChecked = false;
 
@@ -117,17 +118,31 @@ export async function resolveDecision(
   const llmResult = await queryLLM(toolName, toolInput, projectRoot, trustedPaths);
 
   // LLM can return "ask_user" to escalate to the human via passthrough.
-  // Don't cache ask_user decisions — user should be asked each time.
+  // Only honored when allowAskUser is enabled in config; otherwise treat as deny.
   if (llmResult.decision === "ask_user") {
+    const config: Config = loadConfig();
+    if (config.allowAskUser) {
+      // Don't cache ask_user decisions — user should be asked each time.
+      logDecision({
+        toolName,
+        decision: "passthrough",
+        reason: `LLM uncertain: ${llmResult.reason}`,
+        decisionSource: "llm",
+        sessionId,
+        projectRoot,
+      });
+      return { decision: "passthrough", reason: `LLM uncertain: ${llmResult.reason}` };
+    }
+    // allowAskUser disabled — treat as deny
     logDecision({
       toolName,
-      decision: "passthrough",
-      reason: `LLM uncertain: ${llmResult.reason}`,
+      decision: "deny",
+      reason: `LLM uncertain (ask_user disabled): ${llmResult.reason}`,
       decisionSource: "llm",
       sessionId,
       projectRoot,
     });
-    return { decision: "passthrough", reason: `LLM uncertain: ${llmResult.reason}` };
+    return { decision: "deny", reason: llmResult.reason };
   }
 
   setCachedDecision(
