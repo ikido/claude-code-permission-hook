@@ -218,7 +218,7 @@ program
         baseUrl = "https://openrouter.ai/api/v1";
       } else if (provider === "anthropic") {
         baseUrl = "https://api.anthropic.com/v1";
-        model = "claude-3-5-sonnet-20241022";
+        model = "claude-sonnet-4-6";
       }
 
       // Test API key
@@ -447,7 +447,7 @@ program
       baseUrl = "https://openrouter.ai/api/v1";
     } else if (provider === "anthropic") {
       baseUrl = "https://api.anthropic.com/v1";
-      model = "claude-3-5-sonnet-20241022";
+      model = "claude-sonnet-4-6";
     }
 
     // Test API key
